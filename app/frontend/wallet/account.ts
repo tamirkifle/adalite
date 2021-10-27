@@ -297,7 +297,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     return _getMaxSendableAmount(filteredUtxos, address, sendAmount)
   }
 
-  const arrangeUtxos = (utxos: UTxO[], txPlanArgs: TxPlanArgs): UTxO[] => {
+  const _arrangeUtxos = (utxos: UTxO[], txPlanArgs: TxPlanArgs): UTxO[] => {
     // utxos are sorted deterministically to prevent the scenario of two transactions
     // based on the same set of utxos with the same intent getting through (provided the
     // transaction planning itself is deterministic, which it is ATM), causing kind of
@@ -336,7 +336,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
   const getTxPlan = async (txPlanArgs: TxPlanArgs): Promise<TxPlanResult> => {
     const changeAddress = await getChangeAddress()
     _assertAccountLoaded()
-    const arrangedUtxos = arrangeUtxos(utxos, txPlanArgs)
+    const arrangedUtxos = _arrangeUtxos(utxos, txPlanArgs)
     return selectMinimalTxPlan(arrangedUtxos, changeAddress, txPlanArgs)
   }
 
@@ -348,15 +348,15 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
   }
 
   async function _fetchAccountInfo(validStakepoolDataProvider: StakepoolDataProvider) {
-    const accountXpubs = await getAccountXpubs()
+    const accountXpubs = await _getAccountXpubs()
     const stakingXpub = await getStakingXpub(cryptoProvider, accountIndex)
     const stakingAddress = await myAddresses.getStakingAddress()
-    const {baseAddressBalance, nonStakingBalance, balance, tokenBalance} = await getBalance()
-    const shelleyAccountInfo = await getStakingInfo(validStakepoolDataProvider)
-    const stakingHistory = await getStakingHistory(validStakepoolDataProvider)
-    const visibleAddresses = await getVisibleAddresses()
-    const transactionHistory = await getTxHistory()
-    const poolRecommendation = await getPoolRecommendation(
+    const {baseAddressBalance, nonStakingBalance, balance, tokenBalance} = await _fetchBalance()
+    const shelleyAccountInfo = await _fetchStakingInfo(validStakepoolDataProvider)
+    const stakingHistory = await _fetchStakingHistory(validStakepoolDataProvider)
+    const visibleAddresses = await _fetchVisibleAddresses()
+    const transactionHistory = await _fetchTxHistory()
+    const poolRecommendation = await _fetchPoolRecommendation(
       shelleyAccountInfo.delegation,
       baseAddressBalance
     )
@@ -383,7 +383,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     }
   }
 
-  async function getBalance() {
+  async function _fetchBalance() {
     const {legacy, base} = await myAddresses.discoverAllAddresses()
     const {
       coins: nonStakingBalance,
@@ -401,12 +401,12 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     }
   }
 
-  async function getTxHistory(): Promise<any> {
+  async function _fetchTxHistory(): Promise<any> {
     const {legacy, base, account} = await myAddresses.discoverAllAddresses()
     return blockchainExplorer.getTxHistory([...base, ...legacy, account])
   }
 
-  async function getStakingHistory(
+  async function _fetchStakingHistory(
     validStakepoolDataProvider: StakepoolDataProvider
   ): Promise<StakingHistoryObject[]> {
     const stakingAddress = await myAddresses.getStakingAddress()
@@ -416,7 +416,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     )
   }
 
-  async function getAccountXpubs() {
+  async function _getAccountXpubs() {
     const shelleyAccountXpub = await getAccoutXpubShelley(cryptoProvider, accountIndex)
     const byronAccountXpub = await getAccoutXpubByron(cryptoProvider, accountIndex)
     return {
@@ -425,7 +425,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     }
   }
 
-  async function getStakingInfo(validStakepoolDataProvider: StakepoolDataProvider) {
+  async function _fetchStakingInfo(validStakepoolDataProvider: StakepoolDataProvider) {
     const stakingAddressHex = bechAddressToHex(await myAddresses.getStakingAddress())
     const {nextRewardDetails, ...accountInfo} = await blockchainExplorer.getStakingInfo(
       stakingAddressHex
@@ -450,7 +450,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
      * AdaLite original functionality which did not consider change addresses.
      * This is an intermediate step between legacy mode and full Yoroi compatibility.
      */
-    const candidates = await getVisibleAddresses()
+    const candidates = await _fetchVisibleAddresses()
 
     const choice = candidates[0]
     return choice.address
@@ -461,7 +461,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     return await blockchainExplorer.fetchUnspentTxOutputs([...legacy, ...base])
   }
 
-  async function getVisibleAddresses() {
+  async function _fetchVisibleAddresses() {
     const addresses = config.isShelleyCompatible
       ? await myAddresses.baseExtAddrManager.discoverAddressesWithMeta()
       : await myAddresses.legacyExtManager.discoverAddressesWithMeta()
@@ -480,7 +480,7 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
     return await cryptoProvider.displayAddressForPath(absDerivationPath, stakingPath)
   }
 
-  async function getPoolRecommendation(pool: any, stakeAmount: Lovelace): Promise<any> {
+  async function _fetchPoolRecommendation(pool: any, stakeAmount: Lovelace): Promise<any> {
     const poolHash = pool ? pool.poolHash : null
     const poolRecommendation = await blockchainExplorer.getPoolRecommendation(poolHash, stakeAmount)
     if (!poolRecommendation.recommendedPoolHash || config.ADALITE_ENFORCE_STAKEPOOL) {
@@ -504,25 +504,20 @@ const Account = ({config, cryptoProvider, blockchainExplorer, accountIndex}: Acc
   return {
     signTxAux,
     witnessPoolRegTxAux,
-    getBalance,
     getChangeAddress,
     getMaxSendableAmount,
     getMaxNonStakingAmount,
     getTxPlan,
-    getTxHistory,
-    getVisibleAddresses,
     prepareTxAux,
     verifyAddress,
     loadCurrentState,
-    getStakingInfo,
     accountIndex,
-    getPoolRecommendation,
     isAccountUsed,
     ensureXpubIsExported,
-    _getAccountXpubs: getAccountXpubs,
+    _getAccountXpubs,
     getPoolRegistrationTxPlan,
     calculateTtl,
-    _arrangeUtxos: arrangeUtxos,
+    _arrangeUtxos,
   }
 }
 
