@@ -210,7 +210,6 @@ const blockchainExplorer = (ADALITE_CONFIG) => {
         ...(token ? {token} : {}),
       }
     )
-    invalidateGetAddressInfosCache()
     if (!('Right' in response)) {
       debugLog(`Unexpected tx submission response: ${JSON.stringify(response)}`)
       if (!response.statusCode) {
@@ -520,6 +519,10 @@ const blockchainExplorer = (ADALITE_CONFIG) => {
     return request(`${ADALITE_CONFIG.ADALITE_BLOCKCHAIN_EXPLORER_URL}/api/v2/bestSlot`)
   }
 
+  function invalidateCache() {
+    invalidateGetAddressInfosCache()
+  }
+
   return {
     getTxHistory,
     fetchUnspentTxOutputs,
@@ -535,6 +538,7 @@ const blockchainExplorer = (ADALITE_CONFIG) => {
     getStakingInfo,
     getBestSlot,
     getStakepoolDataProvider,
+    invalidateCache,
   }
 }
 

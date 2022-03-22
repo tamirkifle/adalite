@@ -24,6 +24,7 @@ export default (store: Store) => {
   const reloadWalletInfo = async (state: State): Promise<void> => {
     setWalletOperationStatusType(state, 'reloading')
     const wallet = getWallet()
+    wallet.invalidateCache()
     const previousWalletReloadTime = _lastWalletReloadTime
     try {
       updateLastReloadTime()
