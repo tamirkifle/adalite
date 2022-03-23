@@ -73,9 +73,9 @@ const blockchainExplorer = (ADALITE_CONFIG) => {
     return 'Right' in result ? result.Right : undefined
   }
 
-  const {function: _getAddressInfos, invalidate: invalidateGetAddressInfosCache} = cacheResults(
-    15000
-  )(_fetchBulkAddressInfo)
+  const {fn: _getAddressInfos, invalidate: invalidateGetAddressInfosCache} = cacheResults(15000)(
+    _fetchBulkAddressInfo
+  )
 
   async function getTxHistory(addresses: Array<string>): Promise<TxSummaryEntry[]> {
     const chunks = range(0, Math.ceil(addresses.length / gapLimit))

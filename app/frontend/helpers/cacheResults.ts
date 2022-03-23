@@ -1,7 +1,7 @@
 import getHash from './getHash'
 
 type Cache<T> = {
-  function: T
+  fn: T
   invalidate: () => void
 }
 
@@ -24,7 +24,7 @@ const cacheResults = (maxAge: number) => <T extends Function>(fn: T): Cache<T> =
   }
 
   return {
-    function: (wrapped as any) as T,
+    fn: (wrapped as any) as T,
     invalidate,
   }
 }
